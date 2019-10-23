@@ -1,0 +1,1 @@
+Yet Another Java Service Wrapper version is 12.13
