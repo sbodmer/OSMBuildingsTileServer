@@ -33,8 +33,10 @@ import java.awt.geom.Path2D;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.net.HttpURLConnection;
@@ -261,7 +263,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         if (points.size() >= 4) {
             try {
                 //--- Check if correct linear ring (first = last)
-                System.out.println("Checking ring for " + w.getId());
+                // System.out.println("Checking ring for " + w.getId());
                 // for (int j = 0; j < list.size(); j++) System.out.println("[" + w.getId() + "] Point " + j + " => " + list.get(j));
                 Point first = points.get(0);
                 Point last = points.get(points.size() - 1);
@@ -729,9 +731,8 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
      * @throws OsmApiReadResponseException
      */
     protected void osmbuildings(int zoom, int x, int y) throws OsmApiReadResponseException {
-        System.out.println("(osmbuildings@" + getName() + ") " + zoom + "," + x + "," + y);
+        System.out.println("(D) osmbuildings@" + getName() + " " + zoom + "," + x + "," + y);
 
-        //TODO: Check if already in cache
         String provider = server.getApiProvider();
         // https://api.openstreetmap.org/api/0.6/
         OsmConnection osm = new OsmConnection(provider, "OSMBuildingsHttpConnection");
@@ -786,7 +787,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
 
         try {
             File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
-            System.out.println("(osmbuildings@" + getName() + ") Saving produced json to " + f.getPath());
+            System.out.println("(D) osmbuildings@" + getName() + " Saving produced json to " + f.getPath());
             f.getParentFile().mkdirs();
             FileWriter w = new FileWriter(f);
             w.write(json);
@@ -798,7 +799,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, json.getBytes());
 
         // System.out.println("JSON:" + json);
-        System.out.println("(osmbuildings@" + getName() + ") Finished");
+        System.out.println("(D) osmbuildings@" + getName() + " Finished");
     }
 
     /**
@@ -1304,7 +1305,6 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             // if ((r.getId() != 6289395L) && (r.getId() != 6289395L)) continue;
             // if (r.getId() != 277924006L) continue;
             // if (r.getId() != 1359233L) continue;
-            
             boolean process = false;
             String type = tags.get("type");
             String building = tags.get("building");
@@ -1363,12 +1363,12 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                             //--- If building is yes, then consider renderering
                             if (t.get("building") != null) {
                                 parts.add(w);
-                                    
+
                             }
-                            
-                        } 
+
+                        }
                         alreadyProcessed.add(w.getId());
-                        
+
                     }
 
                 }
@@ -1431,7 +1431,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                     //--- If main building and no inner, consider not rendering it
                     if (!building.equals("")) outer.remove(w);
                 }
-                
+
             }
             for (int i = 0; i < outer.size(); i++) {
                 Way tmp = outer.get(i);
@@ -1442,13 +1442,12 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                         features.add(produceBuilding(tmp, inner, minheight, height));
                         alreadyProcessed.add(tmp.getId());
                     }
-                    
+
                 } else {
                     // System.out.println("Producing " + building.getId());
                     features.add(produceBuilding(tmp, inner, minheight, height));
                     alreadyProcessed.add(tmp.getId());
                 }
-                
 
             }
 
@@ -1483,19 +1482,19 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             String building = tags.get("building");
             String buildingPart = tags.get("building:part");
             if (building == null) building = "";
-            if (buildingPart == null) buildingPart ="no";
-            
+            if (buildingPart == null) buildingPart = "no";
+
             //--- Some building have no roof defined, consider not a building
             if (building.equals("apartments")) {
                 if (tags.get("roof:shape") == null) continue;
             }
-            
+
             //--- Could be both (which means the outline must also be drawn)
             // System.out.println("Tags:" + tags.get("building"));
             // System.out.println("Tags:" + tags.get("building:part"));
             if (!building.equals("")) outlines.add(w);
             if (!buildingPart.equals("no")) parts.add(w);
-            
+
         }
 
         //--- For each building, find the parts
@@ -1771,15 +1770,45 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
     public void run() {
         try {
             parseHeaders();
-            System.out.println("(uri@" + getName() + ") " + uri);
+            System.out.println("(D) uri@" + getName() + " " + uri);
             String parts[] = uri.split("/");
             if (parts[1].equals("osmbuildings")) {
                 int zoom = Integer.parseInt(parts[2]);
                 int x = Integer.parseInt(parts[3]);
                 int y = Integer.parseInt(parts[4].split("\\.")[0]);
 
-                osmbuildings(zoom, x, y);
+                //--- Check if in cache
+                File f = new File(server.getCachePath(), "" + zoom + File.separator + x + File.separator + y + ".json");
+                // System.out.println("CHECKING:"+f.getPath()+" ("+f.exists()+")");
+                if (f.exists()) {
+                    //--- Check if too old
+                    long now = System.currentTimeMillis()/1000;
+                    long last = f.lastModified()/1000;
+                    long diff = now-last;
+                    long keepDelay = server.getCacheKeepDelay()*24*60*60;
+                    if (diff > keepDelay) f.delete();
+                }
+                
+                if (f.exists()) {
+                    InputStream in = new FileInputStream(f);
+                    byte[] b = new byte[(int) f.length()];
+                    int len = b.length;
+                    int total = 0;
+                    while (total < len) {
+                        int result = in.read(b, total, len - total);
+                        if (result == -1) {
+                            break;
+                        }
+                        total += result;
+                    }
+                    System.out.println("(D) Found file in cache "+f.getPath());
+                    sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, b);
 
+                } else {
+                    //--- Produce it
+                    osmbuildings(zoom, x, y);
+                }
+                
             } else {
                 //--- Not found
                 sendHttpResponse(HttpURLConnection.HTTP_NOT_FOUND, mimes.get("html"), null, null);

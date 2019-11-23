@@ -71,45 +71,46 @@
 
     -->
     
+    <target name="-post-jar" description="Create all jars and deploy locally">
+        <antcall target="local_deploy"/>
+    </target>
+    
     <target name="local_deploy">
         <!-- Kernel -->
         <echo message="[Local] Copying files to local dist folder"/>
         
         <!-- Platform dependant -->
         <echo message="[Local] Copying platform libs for platform ${platform}"/>
-        <copy todir="${dist.dir}/Knop/lib">
+        <copy todir="${dist.dir}/lib">
             <fileset file="lib/platform/${platform}/*"/>
         </copy>
         <echo message="[Local] Copying platform bin for platform ${platform}"/>
-        <mkdir dir="${dist.dir}/Knop/bin"/>
-        <copy todir="${dist.dir}/Knop/bin">
+        <mkdir dir="${dist.dir}/bin"/>
+        <copy todir="${dist.dir}/bin">
             <fileset file="bin/platform/${platform}/*"/>
         </copy>
         
         <!-- Wrapper -->
-        <echo message="[Local] Copying ${superd.wrapper} libs for knopd platform ${platform}"/>
-        <mkdir dir="${dist.dir}/Knop/Logs"/>
-        <copy todir="${dist.dir}/Knop/lib">
+        <echo message="[Local] Copying ${superd.wrapper} libs for platform ${platform}"/>
+        <mkdir dir="${dist.dir}/Logs"/>
+        <copy todir="${dist.dir}/lib">
             <fileset dir="lib/${superd.wrapper}/platform/${platform}"/>
         </copy>
-        <echo message="[Local] Copying ${superd.wrapper} bin for knopd platform ${platform}"/>
-        <mkdir dir="${dist.dir}/Knop/bin"/>
-        <copy todir="${dist.dir}/Knop/bin">
-            <fileset dir="bin/${superd.wrapper}/platform/${platform}/knopd"/>
+        <echo message="[Local] Copying ${superd.wrapper} bin for platform ${platform}"/>
+        <mkdir dir="${dist.dir}/bin"/>
+        <copy todir="${dist.dir}/bin">
+            <fileset dir="bin/${superd.wrapper}/platform/${platform}"/>
         </copy>
-        <chmod dir="${dist.dir}/Knop/bin" perm="u+x" includes="**/*.sh,wrapper"/>
-        <echo message="Local Copying ${superd.wrapper} conf for knopd platform ${platform}"/>
-        <mkdir dir="${dist.dir}/Knop/conf"/>
-        <copy todir="${dist.dir}/Knop/conf">
-            <fileset file="conf/${superd.wrapper}/knopd.conf"/>
+        <chmod dir="${dist.dir}/bin" perm="u+x" includes="**/*.sh,wrapper"/>
+        <echo message="Local Copying ${superd.wrapper} conf for platform ${platform}"/>
+        <mkdir dir="${dist.dir}/conf"/>
+        <copy todir="${dist.dir}/conf">
+            <fileset file="conf/${superd.wrapper}/osmb.conf"/>
         </copy>
         <!--- Copy additional files at the root of the deploy dir -->
-        <copy todir="${dist.dir}/Knop">
+        <copy todir="${dist.dir}">
             <fileset dir="bin/${superd.wrapper}/root"/>
         </copy>
-        
-        
-        
         
     </target>
 </project>
