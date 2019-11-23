@@ -23,3 +23,8 @@ To run the application cd in the newly created dist dir
 
     cd dist
     bin/osmb.sh console
+
+## Running
+After the service starts, the json files can be found at
+http://{HOST}:{PORT}/osmbuildings/${Z}/${X}/${Y}.json
+The default port is 8088
