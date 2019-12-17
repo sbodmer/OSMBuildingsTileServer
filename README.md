@@ -28,3 +28,11 @@ To run the application cd in the newly created dist dir
 After the service starts, the json files can be found at
 http://{HOST}:{PORT}/osmbuildings/${Z}/${X}/${Y}.json
 The default port is 8088
+
+    ${Z} is the zoom level (15 should be the best one)
+    ${X} is the horizontal tile number (for the zoom level)
+    ${Y} is the vertical tile number (for the zoom level)
+    
+There can be a large amount of data fetching from main osm server, so 
+the server will block your requests if too much traffic is generated, a
+better idea is to use your own osm server if possible.
