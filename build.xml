@@ -111,6 +111,10 @@
         <copy todir="${dist.dir}">
             <fileset dir="bin/${superd.wrapper}/root"/>
         </copy>
-        
+        <!--- Copy main configr -->
+        <mkdir dir="${dist.dir}/etc"/>
+        <copy todir="${dist.dir}/etc">
+            <fileset file="etc/osmb.properties"/>
+        </copy>
     </target>
 </project>

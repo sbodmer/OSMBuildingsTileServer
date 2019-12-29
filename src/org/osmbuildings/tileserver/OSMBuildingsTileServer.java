@@ -41,7 +41,8 @@ public class OSMBuildingsTileServer extends Thread {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-
+        provider = p.getProperty("OSM_API", "https://api.openstreetmap.org/api/0.6/");
+        
         Thread main = this;
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
@@ -99,6 +100,7 @@ public class OSMBuildingsTileServer extends Thread {
                     ssocket.setSoTimeout(1000);
 
                     System.out.println("(M) OSMBuildingsTileServer listening on " + ssocket.getInetAddress() + ":" + ssocket.getLocalPort());
+                    System.out.println("(M) OSM API provider is "+provider);
                     int iteration = 0;
                     while (isInterrupted() == false) {
                         try {
@@ -185,7 +187,7 @@ public class OSMBuildingsTileServer extends Thread {
                 System.out.println(" The folder where to store the resolved .json files");
                 System.out.println("");
                 System.out.println("-config {config properties}");
-                System.out.println(" The main config file");
+                System.out.println(" The main config file (if not set etc/osmb.properties is loaded if exists)");
                 System.exit(0);
             }
         }
@@ -198,6 +200,11 @@ public class OSMBuildingsTileServer extends Thread {
         try {
             if (!config.equals("")) {
                 p.load(new FileReader(config));
+                
+            } else {
+                //--- Try local one
+                File l = new File(System.getProperty("user.dir"),"etc/osmb.properties");
+                if (l.exists()) p.load(new FileReader(l));
             }
 
         } catch (Exception ex) {
