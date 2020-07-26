@@ -1330,8 +1330,15 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             //--- If no height, consider not to handled (only footprint information)
             //--- Default values for height an min height (needed for parts with
             //--- no height defined
-            double height = Double.parseDouble(tags.get("height") == null ? "0" : tags.get("height"));
-            double minheight = Double.parseDouble(tags.get("min_height") == null ? "0" : tags.get("min_height"));
+            double height = 0;
+            double minheight = 0;
+            try {
+                height = Double.parseDouble(tags.get("height") == null ? "0" : tags.get("height"));
+                minheight = Double.parseDouble(tags.get("min_height") == null ? "0" : tags.get("min_height"));
+                
+            } catch (NumberFormatException ex) {
+                //---
+            }
             System.out.println("Relation handling [" + r.getId() + "] , min_height=" + minheight + ", height=" + height + " building=" + building + " building:part=" + buildingPart);
             //---Multiple outer way possible
             ArrayList<Way> outer = new ArrayList<>();
