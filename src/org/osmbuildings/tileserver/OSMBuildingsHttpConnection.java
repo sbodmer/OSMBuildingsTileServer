@@ -1682,6 +1682,8 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             Relation r = rit.next();
             //--- Filter by building related
             Map<String, String> tags = r.getTags();
+            if (tags == null) continue;
+            
             String type = tags.get("type");
             String building = tags.get("building");
             if (building == null) building = "";
