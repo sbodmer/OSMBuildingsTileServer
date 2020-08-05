@@ -798,6 +798,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 ex.printStackTrace();
             }
         }
+        
         sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, json.getBytes());
 
         // System.out.println("JSON:" + json);
@@ -1339,7 +1340,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             } catch (NumberFormatException ex) {
                 //---
             }
-            System.out.println("Relation handling [" + r.getId() + "] , min_height=" + minheight + ", height=" + height + " building=" + building + " building:part=" + buildingPart);
+            System.out.println("Relation handling [" + r.getId() + "] , min_height=" + minheight + ", height=" + height + " building=" + building + " building:part=" + buildingPart+" type="+type);
             //---Multiple outer way possible
             ArrayList<Way> outer = new ArrayList<>();
             ArrayList<Way> inner = new ArrayList<>();
@@ -1372,12 +1373,13 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                         //--- Outline of the part, do not render
                         Map<String, String> t = w.getTags();
                         if (t != null) {
-                            //--- If building outiline is yes, then consider renderering
+                            //--- If building outline is yes, then consider renderering
                             //--- only for special cases
                             String b = t.get("building");
                             if (b != null) {
                                 if (b.equals("cathedral")) {
                                     //--- No rendering of the outline
+                                    
                                 } else if (b.equals("basilica")) {
                                     //--- No rendering of the outline (ex: Vaticn)
                                     
@@ -1409,7 +1411,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             }
 
             //--- Merge outer with same first and last node
-            //--- Store the origina list,so it can be reset to old list because
+            //--- Store the original list,so it can be reset to old list because
             //--- other component needs the origial one
             HashMap<Long, ArrayList<Long>> original = new HashMap<>();
             for (int i = 0; i < outer.size(); i++) {
@@ -1705,7 +1707,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 if (m.getType() == Type.RELATION) {
                     Relation tmp = relations.get(m.getRef());
                     if (tmp == null) {
-                        System.out.println("[" + r.getId() + "] Relation " + m.getRef() + " not found");
+                        // System.out.println("[" + r.getId() + "] Relation " + m.getRef() + " not found");
                         r2f.add(m.getRef());
                         needFetching = true;
                     }
@@ -1713,7 +1715,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 } else if (m.getType() == Type.WAY) {
                     Way tmp = ways.get(m.getRef());
                     if (tmp == null) {
-                        System.out.println("[" + r.getId() + "] Way " + m.getRef() + " not found");
+                        // System.out.println("[" + r.getId() + "] Way " + m.getRef() + " not found");
                         w2f.add(m.getRef());
                         needFetching = true;
                     }
@@ -1721,7 +1723,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 } else if (m.getType() == Type.NODE) {
                     Node tmp = nodes.get(m.getRef());
                     if (tmp == null) {
-                        System.out.println("[" + r.getId() + "] Node " + m.getRef() + " not found");
+                        // System.out.println("[" + r.getId() + "] Node " + m.getRef() + " not found");
                         n2f.add(m.getRef());
                         needFetching = true;
                     }
@@ -1757,6 +1759,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             List<Relation> rel = md.getRelations(toFetch);
             for (int i = 0; i < rel.size(); i++) {
                 Relation tmp = rel.get(i);
+                // System.out.println("[" + tmp.getId() + "] Relation fetched");
                 relations.put(tmp.getId(), tmp);
             }
         }
@@ -1773,9 +1776,11 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             List<Way> wa = md.getWays(toFetch);
             for (int i = 0; i < wa.size(); i++) {
                 Way tmp = wa.get(i);
+                // System.out.println("[" + tmp.getId() + "] Way fetched");
                 ways.put(tmp.getId(), tmp);
             }
         }
+        
         //--- Fetch nodes
         while (!n2f.isEmpty()) {
             ArrayList<Long> toFetch = new ArrayList<>();
@@ -1788,6 +1793,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             List<Node> no = md.getNodes(toFetch);
             for (int i = 0; i < no.size(); i++) {
                 Node tmp = no.get(i);
+                // System.out.println("[" + tmp.getId() + "] Node fetched");
                 nodes.put(tmp.getId(), tmp);
             }
         }
