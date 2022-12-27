@@ -84,7 +84,6 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
     protected String method = "";
     protected String uri = "";
     protected String protocol = "";
-    protected boolean store = true;
 
     protected Properties headers = new Properties();      //--- Request headers
     protected Properties params = new Properties();       //--- Request parameters
@@ -620,16 +619,18 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         FeatureCollection coll = new FeatureCollection(features);
         String json = gson.toJson(coll);
 
-        try {
-            File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
-            System.out.println("(osmbuildings@" + getName() + ") Saving produced json to " + f.getPath());
-            f.getParentFile().mkdirs();
-            FileWriter w = new FileWriter(f);
-            w.write(json);
-            w.close();
+        if (server.getCachePath() != null) {
+            try {
+                File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
+                System.out.println("(osmbuildings@" + getName() + ") Saving produced json to " + f.getPath());
+                f.getParentFile().mkdirs();
+                FileWriter w = new FileWriter(f);
+                w.write(json);
+                w.close();
 
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
         sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, json.getBytes());
 
@@ -785,7 +786,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
 
         FeatureCollection coll = new FeatureCollection(features);
         String json = gson.toJson(coll);
-        if (store) {
+        if (server.getCachePath() != null) {
             try {
                 File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
                 System.out.println("(D) osmbuildings@" + getName() + " Saving produced json to " + f.getPath());
@@ -798,18 +799,19 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 ex.printStackTrace();
             }
         }
-        
+
         sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, json.getBytes());
 
         // System.out.println("JSON:" + json);
         System.out.println("(D) osmbuildings@" + getName() + " Finished");
+        server.loaded(json.length());
     }
 
     /**
      * The outline building will be rendererd with all included parts as holes
      *
      * DEBUG ONLY
-     * 
+     *
      * @param zoom
      * @param x
      * @param y
@@ -956,16 +958,18 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         FeatureCollection coll = new FeatureCollection(features);
         String json = gson.toJson(coll);
 
-        try {
-            File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
-            System.out.println("(osmbuildings@" + getName() + ") Saving produced json to " + f.getPath());
-            f.getParentFile().mkdirs();
-            FileWriter w = new FileWriter(f);
-            w.write(json);
-            w.close();
+        if (server.getCachePath() != null) {
+            try {
+                File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
+                System.out.println("(osmbuildings@" + getName() + ") Saving produced json to " + f.getPath());
+                f.getParentFile().mkdirs();
+                FileWriter w = new FileWriter(f);
+                w.write(json);
+                w.close();
 
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
         sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, json.getBytes());
 
@@ -975,7 +979,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
 
     /**
      * Display all buildings
-     * 
+     *
      * DEBUG ONLY
      *
      * @param zoom
@@ -1055,16 +1059,18 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         FeatureCollection coll = new FeatureCollection(features);
         String json = gson.toJson(coll);
 
-        try {
-            File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
-            System.out.println("(osmbuildings@" + getName() + ") Saving produced json to " + f.getPath());
-            f.getParentFile().mkdirs();
-            FileWriter w = new FileWriter(f);
-            w.write(json);
-            w.close();
+        if (server.getCachePath() != null) {
+            try {
+                File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
+                System.out.println("(osmbuildings@" + getName() + ") Saving produced json to " + f.getPath());
+                f.getParentFile().mkdirs();
+                FileWriter w = new FileWriter(f);
+                w.write(json);
+                w.close();
 
-        } catch (IOException ex) {
-            ex.printStackTrace();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         }
         sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, json.getBytes());
 
@@ -1325,7 +1331,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             if (type.equals("building")) process = true;
             if (!building.equals("")) process = true;
             if (!buildingPart.equals("")) process = true;
-            
+
             if (!process) continue;
 
             //--- If no height, consider not to handled (only footprint information)
@@ -1336,11 +1342,11 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             try {
                 height = Double.parseDouble(tags.get("height") == null ? "0" : tags.get("height"));
                 minheight = Double.parseDouble(tags.get("min_height") == null ? "0" : tags.get("min_height"));
-                
+
             } catch (NumberFormatException ex) {
                 //---
             }
-            System.out.println("Relation handling [" + r.getId() + "] , min_height=" + minheight + ", height=" + height + " building=" + building + " building:part=" + buildingPart+" type="+type);
+            System.out.println("Relation handling [" + r.getId() + "] , min_height=" + minheight + ", height=" + height + " building=" + building + " building:part=" + buildingPart + " type=" + type);
             //---Multiple outer way possible
             ArrayList<Way> outer = new ArrayList<>();
             ArrayList<Way> inner = new ArrayList<>();
@@ -1379,22 +1385,22 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                             if (b != null) {
                                 if (b.equals("cathedral")) {
                                     //--- No rendering of the outline
-                                    
+
                                 } else if (b.equals("basilica")) {
                                     //--- No rendering of the outline (ex: Vaticn)
-                                    
+
                                 } else {
                                     //--- building is yes, check if it's a part
                                     String bp = t.get("building:part");
                                     if (bp != null) {
                                         if (bp.equals("no")) {
                                             //--- No rendering
-                                            
+
                                         } else {
                                             parts.add(w);
                                         }
                                     }
-                                    
+
                                 }
 
                             }
@@ -1574,8 +1580,8 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 double height = 0.0d;
                 double minHeight = 0.0d;
                 try {
-                    if (tags.get("height") != null) height = Double.parseDouble(tags.get("height").replace('m', ' ').replace('\'',' '));
-                    if (tags.get("min_height") != null) minHeight = Double.parseDouble(tags.get("min_height").replace('m', ' ').replace('\'',' '));
+                    if (tags.get("height") != null) height = Double.parseDouble(tags.get("height").replace('m', ' ').replace('\'', ' '));
+                    if (tags.get("min_height") != null) minHeight = Double.parseDouble(tags.get("min_height").replace('m', ' ').replace('\'', ' '));
 
                 } catch (NumberFormatException ex) {
                     ex.printStackTrace();
@@ -1685,7 +1691,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
             //--- Filter by building related
             Map<String, String> tags = r.getTags();
             if (tags == null) continue;
-            
+
             String type = tags.get("type");
             String building = tags.get("building");
             if (building == null) building = "";
@@ -1780,7 +1786,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 ways.put(tmp.getId(), tmp);
             }
         }
-        
+
         //--- Fetch nodes
         while (!n2f.isEmpty()) {
             ArrayList<Long> toFetch = new ArrayList<>();
@@ -1817,9 +1823,10 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 int y = Integer.parseInt(parts[4].split("\\.")[0]);
 
                 //--- Check if in cache
-                File f = new File(server.getCachePath(), "" + zoom + File.separator + x + File.separator + y + ".json");
+                File f = null;
+                if (server.getCachePath() != null) f = new File(server.getCachePath(), "" + zoom + File.separator + x + File.separator + y + ".json");
                 // System.out.println("CHECKING:"+f.getPath()+" ("+f.exists()+")");
-                if (f.exists()) {
+                if ((f != null) && f.exists()) {
                     //--- Check if too old
                     long now = System.currentTimeMillis() / 1000;
                     long last = f.lastModified() / 1000;
@@ -1828,7 +1835,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                     if (diff > keepDelay) f.delete();
                 }
 
-                if (f.exists()) {
+                if ((f != null) && f.exists()) {
                     InputStream in = new FileInputStream(f);
                     byte[] b = new byte[(int) f.length()];
                     int len = b.length;

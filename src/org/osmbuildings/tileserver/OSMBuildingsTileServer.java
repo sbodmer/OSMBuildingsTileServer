@@ -26,23 +26,39 @@ public class OSMBuildingsTileServer extends Thread {
     File cache = null;
     String provider = "https://api.openstreetmap.org/api/0.6/";
     // String provider = "https://master.apis.dev.openstreetmap.org/api/0.6/";
-
+    
+    /**
+     * Total bytes loaded
+     */
+    long loaded = 0L;
+    
+    /**
+     * The properties contains the main tile server configuration
+     *
+     * If the cache folder is empty, no cache will be used
+     *
+     * @param p
+     */
     public OSMBuildingsTileServer(Properties p) {
         super("OSMBuildingsTileServer");
         this.p = p;
         ip = p.getProperty("HOST", "0.0.0.0");
 
-        cache = new File(p.getProperty("CACHE_FOLDER"));
-        cache.mkdirs();
-        System.out.println("(I) Cache path is " + cache.getPath());
+        if (!p.getProperty("CACHE_FOLDER", "").equals("")) {
+            cache = new File(p.getProperty("CACHE_FOLDER"));
+            cache.mkdirs();
+            System.out.println("(I) Cache path is " + cache.getPath());
+
+        }
         try {
             port = Integer.parseInt(p.getProperty("PORT"));
             cacheDelay = Integer.parseInt(p.getProperty("CACHE_KEEP_DELAY"));
+
         } catch (Exception ex) {
             ex.printStackTrace();
         }
         provider = p.getProperty("OSM_API", "https://api.openstreetmap.org/api/0.6/");
-        
+
         Thread main = this;
         Runtime.getRuntime().addShutdownHook(new Thread() {
             public void run() {
@@ -55,7 +71,7 @@ public class OSMBuildingsTileServer extends Thread {
                         cnt++;
                         if (cnt > 0) break;
                     }
-                    
+
                 } catch (InterruptedException ex) {
 
                 }
@@ -66,6 +82,11 @@ public class OSMBuildingsTileServer extends Thread {
     //**************************************************************************
     //*** API
     //**************************************************************************
+    /**
+     * If no cach is specified, returns null
+     *
+     * @return
+     */
     public File getCachePath() {
         return cache;
     }
@@ -73,11 +94,27 @@ public class OSMBuildingsTileServer extends Thread {
     public int getCacheKeepDelay() {
         return cacheDelay;
     }
-    
+
     public String getApiProvider() {
         return provider;
     }
 
+    /**
+     * Returns the API loaded bytes
+     * @return 
+     */
+    public long getLoaded() {
+        return loaded;
+    }
+    /**
+     * When a json is loaded, this one is called for simple data metrics
+     * 
+     * @param bytes 
+     */
+    public void loaded(int bytes) {
+        loaded += bytes;
+    }
+    
     //**************************************************************************
     //*** Run
     //***************************************************************************
@@ -100,7 +137,7 @@ public class OSMBuildingsTileServer extends Thread {
                     ssocket.setSoTimeout(1000);
 
                     System.out.println("(M) OSMBuildingsTileServer listening on " + ssocket.getInetAddress() + ":" + ssocket.getLocalPort());
-                    System.out.println("(M) OSM API provider is "+provider);
+                    System.out.println("(M) OSM API provider is " + provider);
                     int iteration = 0;
                     while (isInterrupted() == false) {
                         try {
@@ -200,10 +237,10 @@ public class OSMBuildingsTileServer extends Thread {
         try {
             if (!config.equals("")) {
                 p.load(new FileReader(config));
-                
+
             } else {
                 //--- Try local one
-                File l = new File(System.getProperty("user.dir"),"etc/osmb.properties");
+                File l = new File(System.getProperty("user.dir"), "etc/osmb.properties");
                 if (l.exists()) p.load(new FileReader(l));
             }
 
