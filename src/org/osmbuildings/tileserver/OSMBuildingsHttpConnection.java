@@ -376,6 +376,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                     }
 
                 } catch (NumberFormatException ex) {
+                    server.listener.buildingsLogs(1, "NumberFormatException ERROR "+key+"="+value);
                     System.out.println("ERROR:" + key + "=" + value);
                     // ex.printStackTrace();
                 }
@@ -733,7 +734,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
      * @throws OsmApiReadResponseException
      */
     protected void osmbuildings(int zoom, int x, int y) throws OsmApiReadResponseException {
-        System.out.println("(D) osmbuildings@" + getName() + " " + zoom + "," + x + "," + y);
+        server.listener.buildingsLogs(0,"osmbuildings@" + getName() + " " + zoom + "," + x + "," + y);
 
         String provider = server.getApiProvider();
         // https://api.openstreetmap.org/api/0.6/
@@ -789,7 +790,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         if (server.getCachePath() != null) {
             try {
                 File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
-                System.out.println("(D) osmbuildings@" + getName() + " Saving produced json to " + f.getPath());
+                server.listener.buildingsLogs(0,"osmbuildings@" + getName() + " Saving produced json to " + f.getPath());
                 f.getParentFile().mkdirs();
                 FileWriter w = new FileWriter(f);
                 w.write(json);
@@ -803,7 +804,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, json.getBytes());
 
         // System.out.println("JSON:" + json);
-        System.out.println("(D) osmbuildings@" + getName() + " Finished");
+        server.listener.buildingsLogs(0,"osmbuildings@" + getName() + " Finished");
         server.loaded(json.length());
     }
 
@@ -1815,7 +1816,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
     public void run() {
         try {
             parseHeaders();
-            System.out.println("(D) uri@" + getName() + " " + uri);
+            server.listener.buildingsLogs(0,"uri@" + getName() + " " + uri);
             String parts[] = uri.split("/");
             if (parts[1].equals("osmbuildings")) {
                 int zoom = Integer.parseInt(parts[2]);
@@ -1847,7 +1848,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                         }
                         total += result;
                     }
-                    System.out.println("(D) Found file in cache " + f.getPath());
+                    server.listener.buildingsLogs(0, "Found file in cache " + f.getPath());
                     sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, b);
 
                 } else {
@@ -1862,6 +1863,8 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
 
         } catch (Exception ex) {
             ex.printStackTrace();
+            //--- Band with limit reached ?
+            server.listener.buildingsLogs(2, "Bad HTTP Request "+ex.getMessage());
             sendHttpResponse(HttpURLConnection.HTTP_BAD_REQUEST, mimes.get("html"), null, null);
 
         }

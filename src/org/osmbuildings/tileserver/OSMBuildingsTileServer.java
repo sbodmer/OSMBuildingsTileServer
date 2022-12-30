@@ -27,6 +27,8 @@ public class OSMBuildingsTileServer extends Thread {
     String provider = "https://api.openstreetmap.org/api/0.6/";
     // String provider = "https://master.apis.dev.openstreetmap.org/api/0.6/";
     
+    public OSMBuildingsTileServerListener listener = null;
+    
     /**
      * Total bytes loaded
      */
@@ -39,15 +41,17 @@ public class OSMBuildingsTileServer extends Thread {
      *
      * @param p
      */
-    public OSMBuildingsTileServer(Properties p) {
+    public OSMBuildingsTileServer(Properties p, OSMBuildingsTileServerListener listener) {
         super("OSMBuildingsTileServer");
         this.p = p;
+        this.listener = listener;
+        
         ip = p.getProperty("HOST", "0.0.0.0");
 
         if (!p.getProperty("CACHE_FOLDER", "").equals("")) {
             cache = new File(p.getProperty("CACHE_FOLDER"));
             cache.mkdirs();
-            System.out.println("(I) Cache path is " + cache.getPath());
+            listener.buildingsLogs(0,"Cache path is " + cache.getPath());
 
         }
         try {
@@ -136,13 +140,13 @@ public class OSMBuildingsTileServer extends Thread {
 
                     ssocket.setSoTimeout(1000);
 
-                    System.out.println("(M) OSMBuildingsTileServer listening on " + ssocket.getInetAddress() + ":" + ssocket.getLocalPort());
-                    System.out.println("(M) OSM API provider is " + provider);
+                    listener.buildingsLogs(0,"OSMBuildingsTileServer listening on " + ssocket.getInetAddress() + ":" + ssocket.getLocalPort());
+                    listener.buildingsLogs(0,"OSM API provider is " + provider);
                     int iteration = 0;
                     while (isInterrupted() == false) {
                         try {
                             Socket socket = ssocket.accept();
-                            System.out.println("(I) Received connection from " + socket.getInetAddress().getHostAddress());
+                            listener.buildingsLogs(0,"Received connection from " + socket.getInetAddress().getHostAddress());
                             OSMBuildingsHttpConnection con = new OSMBuildingsHttpConnection(tg, socket, this);
                             con.start();
 
@@ -161,9 +165,10 @@ public class OSMBuildingsTileServer extends Thread {
                     }
 
                     ssocket.close();
-                    System.out.println("(M) OSMBuildingsTileServer stopped");
+                    listener.buildingsLogs(0,"OSMBuildingsTileServer stopped");
 
                 } catch (Exception ex) {
+                    listener.buildingsLogs(1,ex.getMessage());
                     ex.printStackTrace();
 
                 }
@@ -181,7 +186,7 @@ public class OSMBuildingsTileServer extends Thread {
     //*** Private
     //**************************************************************************
     private void houseKeeping() {
-
+        //--- Nothing at the moment
     }
 
     /**
@@ -250,7 +255,20 @@ public class OSMBuildingsTileServer extends Thread {
         if (!cache.equals("")) p.setProperty("CACHE_FOLDER", cache);
         if (!host.equals("")) p.setProperty("HOST", host);
         if (!port.equals("")) p.setProperty("PORT", port);
-        OSMBuildingsTileServer server = new OSMBuildingsTileServer(p);
+        OSMBuildingsTileServer server = new OSMBuildingsTileServer(p, new OSMBuildingsTileServerListener() {
+            @Override
+            public void buildingsLogs(int state, String line) {
+                if (state == OSMBuildingsTileServerListener.STATE_ERROR) {
+                    System.err.println("(E) "+line);
+                    
+                } else if (state == OSMBuildingsTileServerListener.STATE_WARNING) {
+                    System.out.println("(W) "+line);
+                    
+                } else {
+                    System.out.println("(I) "+line);
+                }
+            }
+        });
         server.start();
     }
 
