@@ -19,6 +19,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonWriter;
 import de.westnordost.osmapi.OsmConnection;
+import de.westnordost.osmapi.common.errors.OsmApiException;
 import de.westnordost.osmapi.common.errors.OsmApiReadResponseException;
 import de.westnordost.osmapi.map.MapDataDao;
 import de.westnordost.osmapi.map.data.BoundingBox;
@@ -376,7 +377,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                     }
 
                 } catch (NumberFormatException ex) {
-                    server.listener.buildingsLogs(1, "NumberFormatException ERROR "+key+"="+value);
+                    server.listener.buildingsLogs(1, "NumberFormatException ERROR " + key + "=" + value);
                     System.out.println("ERROR:" + key + "=" + value);
                     // ex.printStackTrace();
                 }
@@ -405,7 +406,6 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
 
         //TODO: Check if already in cache
         String provider = server.getApiProvider();
-        // https://api.openstreetmap.org/api/0.6/
 
         OsmConnection osm = new OsmConnection(provider, "OSMBuildingsHttpConnection");
 
@@ -734,12 +734,16 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
      * @throws OsmApiReadResponseException
      */
     protected void osmbuildings(int zoom, int x, int y) throws OsmApiReadResponseException {
-        server.listener.buildingsLogs(0,"osmbuildings@" + getName() + " " + zoom + "," + x + "," + y);
+        server.listener.buildingsLogs(0, "osmbuildings@" + getName() + " " + zoom + "," + x + "," + y);
 
         String provider = server.getApiProvider();
-        // https://api.openstreetmap.org/api/0.6/
+        // https://api.openstreetmap.org/api/0.6/ (original, obsolete)
+        // https://www.overpass-api.de/api/xapi? (compatibility layer)
+        // System.out.println("Provider URL:"+provider);
         OsmConnection osm = new OsmConnection(provider, "OSMBuildingsHttpConnection");
         osm.setOutputCall(true);
+        // osm.setTimeout(60*1000);
+
         //--- Top left
         double tllon = Helpers.x2lon(x, zoom);
         double tllat = Helpers.y2lat(y, zoom);
@@ -790,7 +794,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         if (server.getCachePath() != null) {
             try {
                 File f = new File(server.getCachePath(), "" + zoom + "" + File.separatorChar + "" + x + "" + File.separatorChar + "" + y + ".json");
-                server.listener.buildingsLogs(0,"osmbuildings@" + getName() + " Saving produced json to " + f.getPath());
+                server.listener.buildingsLogs(0, "osmbuildings@" + getName() + " Saving produced json to " + f.getPath());
                 f.getParentFile().mkdirs();
                 FileWriter w = new FileWriter(f);
                 w.write(json);
@@ -804,7 +808,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         sendHttpResponse(HttpURLConnection.HTTP_OK, mimes.get("json"), null, json.getBytes());
 
         // System.out.println("JSON:" + json);
-        server.listener.buildingsLogs(0,"osmbuildings@" + getName() + " Finished");
+        server.listener.buildingsLogs(0, "osmbuildings@" + getName() + " Finished");
         server.loaded(json.length());
     }
 
@@ -1673,7 +1677,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
     }
 
     /**
-     * Find if all ids are present is fetched data If true is returned, call
+     * Find if all ids are present in fetched data If true is returned, call
      * fetchMissingObject again (new have arrived which needs to be checked)
      *
      * Filter by bilding related
@@ -1716,7 +1720,8 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                     if (tmp == null) {
                         // System.out.println("[" + r.getId() + "] Relation " + m.getRef() + " not found");
                         r2f.add(m.getRef());
-                        needFetching = true;
+                        //--- Not supported by overpass api
+                        needFetching = false;
                     }
 
                 } else if (m.getType() == Type.WAY) {
@@ -1724,7 +1729,8 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                     if (tmp == null) {
                         // System.out.println("[" + r.getId() + "] Way " + m.getRef() + " not found");
                         w2f.add(m.getRef());
-                        needFetching = true;
+                        //--- Not supported by overpass api, so no resolution
+                        needFetching = false;
                     }
 
                 } else if (m.getType() == Type.NODE) {
@@ -1763,11 +1769,15 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 cnt++;
                 if (cnt >= 200) break;
             }
-            List<Relation> rel = md.getRelations(toFetch);
-            for (int i = 0; i < rel.size(); i++) {
-                Relation tmp = rel.get(i);
-                // System.out.println("[" + tmp.getId() + "] Relation fetched");
-                relations.put(tmp.getId(), tmp);
+            try {
+                List<Relation> rel = md.getRelations(toFetch);
+                for (int i = 0; i < rel.size(); i++) {
+                    Relation tmp = rel.get(i);
+                    // System.out.println("[" + tmp.getId() + "] Relation fetched");
+                    relations.put(tmp.getId(), tmp);
+                }
+            } catch (OsmApiException ex) {
+                System.out.println("(E) Could not resolve relsation identifier : " + ex.getMessage());
             }
         }
 
@@ -1780,11 +1790,18 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 cnt++;
                 if (cnt >= 200) break;
             }
-            List<Way> wa = md.getWays(toFetch);
-            for (int i = 0; i < wa.size(); i++) {
-                Way tmp = wa.get(i);
-                // System.out.println("[" + tmp.getId() + "] Way fetched");
-                ways.put(tmp.getId(), tmp);
+            try {
+                //--- Not supported with compatibility layer (overpass xapi)
+                List<Way> wa = md.getWays(toFetch);
+                for (int i = 0; i < wa.size(); i++) {
+                    Way tmp = wa.get(i);
+                    // System.out.println("[" + tmp.getId() + "] Way fetched");
+                    ways.put(tmp.getId(), tmp);
+                }
+
+            } catch (OsmApiException ex) {
+                System.out.println("(E) Could not resolve ways identifier : " + ex.getMessage());
+
             }
         }
 
@@ -1816,7 +1833,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
     public void run() {
         try {
             parseHeaders();
-            server.listener.buildingsLogs(0,"uri@" + getName() + " " + uri);
+            server.listener.buildingsLogs(0, "uri@" + getName() + " " + uri);
             String parts[] = uri.split("/");
             if (parts[1].equals("osmbuildings")) {
                 int zoom = Integer.parseInt(parts[2]);
@@ -1864,7 +1881,7 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
         } catch (Exception ex) {
             ex.printStackTrace();
             //--- Band with limit reached ?
-            server.listener.buildingsLogs(2, "Bad HTTP Request "+ex.getMessage());
+            server.listener.buildingsLogs(2, "Bad HTTP Request " + ex.getMessage());
             sendHttpResponse(HttpURLConnection.HTTP_BAD_REQUEST, mimes.get("html"), null, null);
 
         }

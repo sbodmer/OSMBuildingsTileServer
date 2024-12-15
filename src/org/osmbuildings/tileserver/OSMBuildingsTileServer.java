@@ -24,7 +24,8 @@ public class OSMBuildingsTileServer extends Thread {
     int port = 8088;
     int cacheDelay = 30;    //--- In days
     File cache = null;
-    String provider = "https://api.openstreetmap.org/api/0.6/";
+    // String provider = "https://api.openstreetmap.org/api/0.6/"; //--- Onsolete, use new compatibility layer
+    String provider = "https://www.overpass-api.de/api/xapi?";
     // String provider = "https://master.apis.dev.openstreetmap.org/api/0.6/";
     
     public OSMBuildingsTileServerListener listener = null;
@@ -61,7 +62,7 @@ public class OSMBuildingsTileServer extends Thread {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        provider = p.getProperty("OSM_API", "https://api.openstreetmap.org/api/0.6/");
+        provider = p.getProperty("OSM_API", "https://www.overpass-api.de/api/xapi?");
 
         Thread main = this;
         Runtime.getRuntime().addShutdownHook(new Thread() {
