@@ -1814,11 +1814,17 @@ public class OSMBuildingsHttpConnection extends Thread implements MapDataHandler
                 cnt++;
                 if (cnt >= 200) break;
             }
-            List<Node> no = md.getNodes(toFetch);
-            for (int i = 0; i < no.size(); i++) {
-                Node tmp = no.get(i);
-                // System.out.println("[" + tmp.getId() + "] Node fetched");
-                nodes.put(tmp.getId(), tmp);
+            try {
+                //--- Not supported with compatibility layer (overpass xapi)
+                List<Node> no = md.getNodes(toFetch);
+                for (int i = 0; i < no.size(); i++) {
+                    Node tmp = no.get(i);
+                    // System.out.println("[" + tmp.getId() + "] Node fetched");
+                    nodes.put(tmp.getId(), tmp);
+                }
+                
+            } catch (OsmApiException ex) {
+                System.out.println("(E) Could not resolve node identifier : " + ex.getMessage());
             }
         }
         System.out.println("<<< Out fetching");
